@@ -606,8 +606,7 @@ async function saveData() {
       notes: document.getElementById('notes').value
     };
     const { error } = await SB.from('framework_data')
-      .update({ data: payload, updated_at: new Date().toISOString() })
-      .eq('id','shared');
+      .upsert({ id: 'shared', data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if (error) throw error;
     setSyncStatus('saved', 'Sačuvano ✓');
   } catch(e) {
