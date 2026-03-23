@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gde živeti — naš framework</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4f1ec;
+  --surface: #ffffff;
+  --surface2: #edeae4;
+  --border: #d8d3ca;
+  --text: #1a1714;
+  --muted: #8a847a;
+  --g: #c05a28;     /* Goran */
+  --p: #2e7aaa;     /* Partner */
+  --gold: #9e7a3a;
+  --green: #3a7d57;
+  --radius: 14px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  padding: 56px 20px 100px;
+}
+
+/* ── NAV TABS ── */
+.main-nav {
+  max-width: 840px;
+  margin: 0 auto 48px;
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.nav-btn.active {
+  background: var(--surface2);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.nav-btn .num {
+  display: block;
+  font-size: 18px;
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+/* ── HEADER ── */
+header {
+  max-width: 840px;
+  margin: 0 auto 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+header h1 em { color: var(--gold); font-style: italic; }
+
+header p {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 260px;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.legend span {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend span::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+}
+
+.legend .lg::before { background: var(--g); }
+.legend .lp::before { background: var(--p); }
+
+/* ── PANELS ── */
+.panel { display: none; max-width: 840px; margin: 0 auto; }
+.panel.active { display: block; }
+
+/* ── SECTION LABEL ── */
+.slabel {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── PHASE TIMELINE ── */
+.timeline-wrap {
+  margin-bottom: 48px;
+}
+
+.phases-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.phase-btn {
+  padding: 14px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+}
+
+.phase-btn:hover { border-color: var(--gold); }
+.phase-btn.active { border-color: var(--gold); background: var(--surface2); }
+
+.phase-btn .ph-icon { font-size: 20px; display: block; margin-bottom: 6px; }
+.phase-btn .ph-title { font-size: 12px; font-weight: 500; display: block; margin-bottom: 2px; }
+.phase-btn .ph-years { font-size: 10px; color: var(--muted); }
+
+.phase-detail {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+.phase-detail.active { display: block; }
+
+.phase-detail h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 6px;
+  color: var(--gold);
+}
+
+.phase-detail .ph-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+.phase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.phase-loc-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.phase-loc-card h4 {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.phase-item {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 4px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.phase-item.good { color: var(--green); }
+.phase-item.bad { color: #c97070; }
+.phase-item.neutral { color: var(--text); opacity: 0.7; }
+
+.phase-item::before { flex-shrink: 0; width: 14px; }
+.phase-item.good::before { content: '✓'; }
+.phase-item.bad::before { content: '✗'; }
+.phase-item.neutral::before { content: '·'; }
+
+/* ── PRIORITIES ── */
+.priorities-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.p-col h3 {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p-col h3::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+}
+
+.p-col.gc h3::before { background: var(--g); }
+.p-col.pc h3::before { background: var(--p); }
+
+.p-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 7px;
+}
+
+.p-item .pl { font-size: 13px; flex: 1; }
+.p-item .pdots { display: flex; gap: 4px; }
+
+.pdot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pdot.on.gc { background: var(--g); border-color: var(--g); }
+.pdot.on.pc { background: var(--p); border-color: var(--p); }
+
+/* ── LOCATIONS ── */
+.loc-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ltab {
+  padding: 7px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.ltab.active { background: var(--surface2); color: var(--text); border-color: var(--gold); }
+
+.loc-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+.loc-card.active { display: block; }
+
+.loc-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.loc-tagline { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 24px; }
+
+.pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.pc-group h4 { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.pc-group ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.pc-group li { font-size: 13px; display: flex; gap: 8px; line-height: 1.45; }
+.pros li::before { content: '+'; color: var(--green); font-weight: 600; flex-shrink: 0; }
+.cons li::before { content: '−'; color: #c97070; font-weight: 600; flex-shrink: 0; }
+
+.rating-block { border-top: 1px solid var(--border); padding-top: 20px; }
+.rating-block h4 { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+.rrow { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.rrow .rn { font-size: 13px; width: 100px; flex-shrink: 0; }
+
+.stars { display: flex; gap: 5px; }
+.star {
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  transition: all 0.12s;
+}
+.star.on.gs { background: var(--g); border-color: var(--g); color: white; }
+.star.on.ps { background: var(--p); border-color: var(--p); color: white; }
+.star.on { color: white; }
+
+/* ── DEALBREAKERS ── */
+.db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+.db-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.db-col h3 { font-size: 13px; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.db-col h3::before { content: ''; width: 9px; height: 9px; border-radius: 50%; display: block; flex-shrink: 0; }
+.db-col.dg h3::before { background: var(--g); }
+.db-col.dp h3::before { background: var(--p); }
+
+.db-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.db-item:last-child { border-bottom: none; }
+.db-item input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--gold); flex-shrink: 0; }
+
+/* ── SUMMARY ── */
+.summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 24px; }
+.summary-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; color: var(--gold); }
+
+.srow { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.srow:last-child { border-bottom: none; }
+.srow .sname { font-size: 13px; font-weight: 500; width: 150px; flex-shrink: 0; }
+.srow .sbars { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.srow .strack { height: 5px; background: var(--border); border-radius: 10px; overflow: hidden; }
+.srow .sfill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+.sfill.sg { background: var(--g); }
+.sfill.sp { background: var(--p); }
+.srow .bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+.srow .savg { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; width: 48px; text-align: center; flex-shrink: 0; color: var(--gold); }
+.srow .stag { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; background: var(--gold); color: #fff; font-weight: 600; flex-shrink: 0; }
+
+.tension-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.tension-card h4 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.tension-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.tension-item:last-child { border-bottom: none; }
+.tension-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tension-dot.high { background: #c97070; }
+.tension-dot.med { background: var(--gold); }
+.tension-dot.low { background: var(--green); }
+
+.notes-area {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.6;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+.notes-area::placeholder { color: var(--muted); }
+
+.upd-btn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.upd-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+@media(max-width:580px){
+  .phases-row { grid-template-columns: repeat(3, 1fr); }
+  .priorities-grid, .pc-grid, .db-grid { grid-template-columns: 1fr; }
+  header { flex-direction: column; gap: 12px; }
+  header p { text-align: left; max-width: 100%; }
+  .legend { justify-content: flex-start; }
+  .main-nav { overflow-x: auto; }
+  .nav-btn { min-width: 70px; }
+}
+
+/* ── SYNC STATUS BAR ── */
+#sync-bar {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-family: 'Outfit', sans-serif;
+  display: flex; align-items: center; gap: 7px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+  z-index: 999;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+#sync-bar .sdot { width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background 0.3s; }
+#sync-bar.saving .sdot { background: var(--gold); }
+#sync-bar.saved  .sdot { background: var(--green); }
+#sync-bar.error  .sdot { background: #c97070; }
+#sync-bar.loading .sdot { background: var(--p); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+/* ── WHO SELECTOR ── */
+.who-bar {
+  max-width: 840px; margin: 0 auto 20px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 16px;
+}
+.who-bar span { font-size: 12px; color: var(--muted); }
+.who-btn {
+  padding: 6px 18px; border-radius: 100px;
+  border: 1.5px solid var(--border); background: transparent;
+  font-family: 'Outfit', sans-serif; font-size: 12px;
+  cursor: pointer; color: var(--text); transition: all 0.15s;
+}
+.who-btn.wg { border-color: var(--g); color: var(--g); background: rgba(192,90,40,0.08); font-weight:500; }
+.who-btn.wp { border-color: var(--p); color: var(--p); background: rgba(46,122,170,0.08); font-weight:500; }
+</style>
+</head>
+<body>
+
+<div id="sync-bar" class="loading"><div class="sdot"></div><span id="sync-txt">Učitavam...</span></div>
+
+<header>
+  <h1>Gde ćemo<br><em>živeti?</em></h1>
+  <div>
+    <p>Framework za usklađivanje — prioriteti, faze života, lokacije.</p>
+    <div class="legend">
+      <span class="lg">Goran</span>
+      <span class="lp">Supruga</span>
+    </div>
+  </div>
+</header>
+
+<div class="who-bar">
+  <span>Popunjavam kao:</span>
+  <button class="who-btn" id="btn-goran" onclick="setWho('goran')">Goran</button>
+  <button class="who-btn" id="btn-partner" onclick="setWho('partner')">Supruga</button>
+</div>
+
+<nav class="main-nav">
+  <button class="nav-btn active" onclick="switchPanel('phases')"><span class="num">01</span>Faze života</button>
+  <button class="nav-btn" onclick="switchPanel('priorities')"><span class="num">02</span>Prioriteti</button>
+  <button class="nav-btn" onclick="switchPanel('locations')"><span class="num">03</span>Lokacije</button>
+  <button class="nav-btn" onclick="switchPanel('dealbreakers')"><span class="num">04</span>Dealbreakers</button>
+  <button class="nav-btn" onclick="switchPanel('summary')"><span class="num">05</span>Rezultati</button>
+</nav>
+
+<!-- PANEL 1: FAZE -->
+<div class="panel active" id="panel-phases">
+  <div class="slabel">Kliknite na fazu i vidite kako svaka lokacija stoji</div>
+  <div class="timeline-wrap">
+    <div class="phases-row" id="phase-btns"></div>
+    <div id="phase-details"></div>
+  </div>
+</div>
+
+<!-- PANEL 2: PRIORITETI -->
+<div class="panel" id="panel-priorities">
+  <div class="slabel">Ocenite šta vam je važno — 1 do 5 tačkica, odvojeno</div>
+  <div class="priorities-grid">
+    <div class="p-col gc"><h3>Goran</h3><div id="goran-prio"></div></div>
+    <div class="p-col pc"><h3>Supruga</h3><div id="partner-prio"></div></div>
+  </div>
+</div>
+
+<!-- PANEL 3: LOKACIJE -->
+<div class="panel" id="panel-locations">
+  <div class="slabel">Ocenite svaku lokaciju od 1 do 5</div>
+  <div class="loc-tabs" id="loc-tabs"></div>
+  <div id="loc-cards"></div>
+</div>
+
+<!-- PANEL 4: DEALBREAKERS -->
+<div class="panel" id="panel-dealbreakers">
+  <div class="slabel">Apsolutni uslovi — bez ovoga ne može</div>
+  <div class="db-grid">
+    <div class="db-col dg"><h3>Goran</h3><div id="goran-db"></div></div>
+    <div class="db-col dp"><h3>Supruga</h3><div id="partner-db"></div></div>
+  </div>
+</div>
+
+<!-- PANEL 5: SUMMARY -->
+<div class="panel" id="panel-summary">
+  <div class="slabel">Ukupni pregled</div>
+  <div class="summary-card">
+    <h3>Poređenje lokacija</h3>
+    <div id="summary-rows"></div>
+  </div>
+  <div class="tension-card">
+    <h4>Tačke razlike — gde razgovor tek počinje</h4>
+    <div id="tensions"></div>
+  </div>
+  <textarea class="notes-area" id="notes" placeholder="Beleške posle razgovora — šta je ostalo otvoreno, šta ste zaključili..." oninput="schedSave()"></textarea>
+  <br>
+  <button class="upd-btn" onclick="renderSummary()">↻ Osveži</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── SUPABASE ──────────────────────────────────────────────────
+const SB = supabase.createClient(
+  'https://wlaeddoeufrweayyksym.supabase.co',
+  'sbp_b9fa16f1f51b1337d878d621d15868775aeb3199'
+);
+
+let saveTimer = null;
+let currentWho = null;
+
+function setSyncStatus(state, msg) {
+  const bar = document.getElementById('sync-bar');
+  const txt = document.getElementById('sync-txt');
+  bar.className = state;
+  txt.textContent = msg;
+}
+
+async function loadData() {
+  setSyncStatus('loading', 'Učitavam...');
+  try {
+    const { data, error } = await SB.from('framework_data').select('data').eq('id','shared').single();
+    if (error) throw error;
+    const d = data.data || {};
+    S.goranPrio     = d.goranPrio     || {};
+    S.partnerPrio   = d.partnerPrio   || {};
+    S.goranRating   = d.goranRating   || {};
+    S.partnerRating = d.partnerRating || {};
+    S.goranDB       = d.goranDB       || {};
+    S.partnerDB     = d.partnerDB     || {};
+    document.getElementById('notes').value = d.notes || '';
+    setSyncStatus('saved', 'Učitano ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Greška pri učitavanju');
+    console.error(e);
+  }
+  renderAll();
+}
+
+async function saveData() {
+  setSyncStatus('saving', 'Čuvam...');
+  try {
+    const payload = {
+      goranPrio: S.goranPrio,
+      partnerPrio: S.partnerPrio,
+      goranRating: S.goranRating,
+      partnerRating: S.partnerRating,
+      goranDB: S.goranDB,
+      partnerDB: S.partnerDB,
+      notes: document.getElementById('notes').value
+    };
+    const { error } = await SB.from('framework_data')
+      .update({ data: payload, updated_at: new Date().toISOString() })
+      .eq('id','shared');
+    if (error) throw error;
+    setSyncStatus('saved', 'Sačuvano ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Greška pri čuvanju');
+    console.error(e);
+  }
+}
+
+function schedSave() {
+  clearTimeout(saveTimer);
+  setSyncStatus('saving', 'Čeka...');
+  saveTimer = setTimeout(saveData, 1200);
+}
+
+function setWho(who) {
+  currentWho = who;
+  document.getElementById('btn-goran').className   = 'who-btn' + (who==='goran'   ? ' wg' : '');
+  document.getElementById('btn-partner').className = 'who-btn' + (who==='partner' ? ' wp' : '');
+}
+
+// ── DATA ──────────────────────────────────────────────────────
+const PHASES = [
+  {
+    id:'now', icon:'🌱', title:'Sada', years:'0–2 god',
+    desc:'Pre dece ili odmah nakon — dvoje, posao, sloboda kretanja.',
+    locs:{
+      grad:     [['good','Sve dostupno, bez auta'],['good','Pun socijalni život'],['neutral','Stan — ok za dvoje'],['bad','Malo prostora dugoročno']],
+      petro:    [['good','Blizu centra, karakter'],['good','Jeftiniji kvadrat'],['neutral','Auto pomaže ali nije must'],['neutral','Mirnije večeri']],
+      kamenica: [['good','Odličan kvalitet vazduha'],['good','Prostor i zelenilo'],['bad','Auto obavezan svaki dan'],['neutral','Dobro za par koji radi od kuće']],
+      bukovac:  [['good','Najjeftiniji start'],['good','Prostor za gradnju'],['bad','Daleko od svega'],['bad','Socijalna izolacija rizik']],
+      zlatibor: [['good','Lifestyle reset'],['good','Priroda i planina'],['bad','Poslovna izolacija'],['bad','Daleko od porodice/prijatelja']]
+    }
+  },
+  {
+    id:'baby', icon:'🍼', title:'Malo dete', years:'0–4 god',
+    desc:'Beba do vrtića — vrtić, pedijatar, umor, logistika, podrška porodice.',
+    locs:{
+      grad:     [['good','Pedijatar i hitna odmah'],['good','Vrtić u blizini'],['good','Podrška porodice / bake'],['bad','Buka i zagađenje za dete']],
+      petro:    [['good','Vrtić dostupan'],['good','Blizu hitne pomoći'],['good','Zelenilo + blizina'],['neutral','Malo manje opcija od centra']],
+      kamenica: [['good','Čist vazduh za razvoj'],['neutral','Vrtić postoji ali manji izbor'],['bad','Svaka logistika zahteva auto'],['bad','Udaljenost od pedijatra']],
+      bukovac:  [['bad','Pedijatar daleko'],['bad','Vrtić — malo opcija'],['bad','Urgentne situacije komplikovane'],['neutral','Mir za spavanje']],
+      zlatibor: [['bad','Pedijatar — daleko i ograničeno'],['bad','Malo vrtića'],['bad','Podrška porodice nerealna'],['bad','Logistika veoma teška']]
+    }
+  },
+  {
+    id:'school', icon:'🎒', title:'Osnovna škola', years:'6–14 god',
+    desc:'Škola, vannastavne aktivnosti, drugarice, organizacija roditelja.',
+    locs:{
+      grad:     [['good','Vrhunske škole, izbor ogroman'],['good','Pešice ili biciklom'],['good','Sport, muzika, jezici — sve tu'],['neutral','Skuplje + gradski ritam']],
+      petro:    [['good','OŠ postoji, blizu'],['good','Dete može biti samostalnije'],['neutral','Manji izbor vannastavnih'],['neutral','Blizu centra za aktivnosti']],
+      kamenica: [['neutral','Škola postoji'],['bad','Sve aktivnosti zahtevaju vožnju'],['bad','Roditelj kao vozač non-stop'],['good','Drugačije detinjstvo — priroda']],
+      bukovac:  [['bad','Osnovna škola — daleko ili mala'],['bad','Svaka aktivnost = sat vožnje'],['bad','Socijalna izolacija deteta'],['good','Sloboda i prostor']],
+      zlatibor: [['bad','Osnovna škola ograničena'],['bad','Nema vannastavnih sadržaja'],['bad','Prijatelji — komplikovano'],['neutral','Priroda kao škola']]
+    }
+  },
+  {
+    id:'teen', icon:'🎓', title:'Tinejdžer', years:'14–18 god',
+    desc:'Srednja škola, socijalni život, mobilnost, prve ozbiljne odluke.',
+    locs:{
+      grad:     [['good','Sve srednje škole dostupne'],['good','Dete nezavisno — javni prevoz'],['good','Bogat socijalni život'],['neutral','Veći grad = veći izazovi']],
+      petro:    [['good','Do centra lako'],['good','Dete relativno nezavisno'],['neutral','Manje opcija lokalno'],['good','Dobra osnova za odrastanje']],
+      kamenica: [['neutral','Autobuska linija postoji'],['bad','Dete zavisno od roditelja za prevoz'],['neutral','Mirnije, fokusiranije'],['bad','Socijalni život ograničen']],
+      bukovac:  [['bad','Daleko od srednje škole'],['bad','Dete zavisno od roditelja'],['bad','Socijalna izolacija ozbiljna'],['neutral','Može se promeniti do tada']],
+      zlatibor: [['bad','Srednja škola — putovanje ili promena'],['bad','Dete mora u internat ili grad'],['neutral','Ako do tad prave bazu — ok'],['bad','Teško zadržati dete blizu']]
+    }
+  },
+  {
+    id:'empty', icon:'🏠', title:'Prazno gnezdo', years:'18+ god',
+    desc:'Deca odrasla, odlaze. Šta sad vi dvoje hoćete od mesta?',
+    locs:{
+      grad:     [['good','Kulturni i socijalni život'],['good','Dostupnost svega'],['neutral','Možda preveliko'],['neutral','Vrednost nekretnine stabilna']],
+      petro:    [['good','Mir + blizina'],['good','Idealan omjer'],['good','Šetnja, kafić, karakter'],['neutral','Možda biste hteli promeniti']],
+      kamenica: [['good','Mir i prostor za sebe'],['good','Natura, bašta, odmor'],['neutral','Auto i dalje potreban'],['good','Vrednost nekretnine raste']],
+      bukovac:  [['good','Pravi mir'],['good','Prostor za goste/unuke'],['neutral','Pitanje infrastrukture do tad'],['good','Potencijal razvoja okoline']],
+      zlatibor: [['good','Sanjski penzionerski lifestyle'],['good','Priroda celo leto'],['good','Turizam = prihodi'],['neutral','Zima može biti izazov']]
+    }
+  }
+];
+
+const PRIORITIES = [
+  'Blizina posla / klijenata','Mir i tišina','Priroda i vazduh',
+  'Kafići, restorani, socijalni život','Kvalitet obrazovanja (škole)',
+  'Prostor za decu i baštu','Logistika — prevoz bez auta',
+  'Cena nekretnine / m²','Infrastruktura (zdravstvo, servisi)','Potencijal rasta vrednosti'
+];
+
+const LOCATIONS = [
+  { id:'grad',     name:'Novi Sad — centar',          tagline:'Energija, dostupnost, kompromis',
+    pros:['Sve na dohvat ruke','Saobraćaj bez glave','Kulturni i poslovni život','Vrhunske škole na izbor','Dete nezavisno od malih nogu'],
+    cons:['Buka i zagađenje','Skuplje nekretnine po m²','Manje prostora','Parking problem'] },
+  { id:'petro',    name:'Petrovaradin',                tagline:'Karakter, blizina, uspon',
+    pros:['Tvrđava i šarm','Blizu centra peške/biciklom','Mirnije + dostupno','Dobre škole u blizini'],
+    cons:['Brežuljasto — umorno dnevno','Manji izbor vannastavnih','Saobraćaj u špic','Manje nekretnina'] },
+  { id:'kamenica', name:'Sremska Kamenica',            tagline:'Fruškogorski mir, gradska dostupnost',
+    pros:['Priroda i zelenilo','Čist vazduh za decu','Mirna sredina','Relativno blizu Novog Sada'],
+    cons:['Auto obavezan uvek','Manje sadržaja za decu','Logistika aktivnosti naporna','Skuplje kuće'] },
+  { id:'bukovac',  name:'Bukovac',                     tagline:'Selo blizu grada — prostor i tišina',
+    pros:['Pravi mir i prostor','Najniža cena m²','Potencijal za izgradnju','Sloboda i bašta'],
+    cons:['Najdalje od centra','Škola i servisi problematično','Deca zavisna od roditelja','Socijalna izolacija rizik'] },
+  { id:'zlatibor', name:'Zlatibor',                    tagline:'Radikalna promena — lifestyle bet',
+    pros:['Planinska priroda','Turizam = prihodi od nekretnine','Čist vazduh i kvalitet života','Rast vrednosti'],
+    cons:['Daleko od Novog Sada','Škole i aktivnosti ograničene','Porodica/prijatelji daleko','Logistika sa decom izuzetno teška'] }
+];
+
+const DEALBREAKERS = [
+  'Do centra max 30 min','Osnovna škola pešice ili linijom','Pedijatar / hitna u blizini',
+  'Vannastavne aktivnosti dostupne','Gradska voda i gas','Brzi internet / fiber',
+  'Parking ili garaža','Sopstveni zeleni prostor','Javni prevoz za dete (od 10+ god)','Blizu baka/deka (podrška)'
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+const S = {
+  goranPrio:{}, partnerPrio:{},
+  goranRating:{}, partnerRating:{},
+  goranDB:{}, partnerDB:{},
+  activePhase:'now', activeLoc:'grad'
+};
+
+// ── PANEL SWITCH ──────────────────────────────────────────────
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const idx = ['phases','priorities','locations','dealbreakers','summary'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if (id==='summary') renderSummary();
+}
+
+// ── PHASES ────────────────────────────────────────────────────
+function renderPhases() {
+  const btns = document.getElementById('phase-btns');
+  const details = document.getElementById('phase-details');
+  btns.innerHTML=''; details.innerHTML='';
+  PHASES.forEach(ph=>{
+    const btn=document.createElement('div');
+    btn.className='phase-btn'+(ph.id===S.activePhase?' active':'');
+    btn.innerHTML=`<span class="ph-icon">${ph.icon}</span><span class="ph-title">${ph.title}</span><span class="ph-years">${ph.years}</span>`;
+    btn.onclick=()=>{S.activePhase=ph.id;renderPhases();};
+    btns.appendChild(btn);
+    const det=document.createElement('div');
+    det.className='phase-detail'+(ph.id===S.activePhase?' active':'');
+    det.innerHTML=`<h3>${ph.icon} ${ph.title} <small style="font-size:0.7em;color:var(--muted);font-family:'Outfit',sans-serif;font-weight:300">${ph.years}</small></h3>
+      <p class="ph-desc">${ph.desc}</p>
+      <div class="phase-grid">${LOCATIONS.map(loc=>`
+        <div class="phase-loc-card">
+          <h4>${loc.name.split('—')[0].trim()}</h4>
+          ${ph.locs[loc.id].map(([cls,txt])=>`<div class="phase-item ${cls}">${txt}</div>`).join('')}
+        </div>`).join('')}</div>`;
+    details.appendChild(det);
+  });
+}
+
+// ── PRIORITIES ────────────────────────────────────────────────
+function renderPrios() {
+  ['goran','partner'].forEach(who=>{
+    const el=document.getElementById(who+'-prio');
+    el.innerHTML='';
+    PRIORITIES.forEach(p=>{
+      const val=S[who+'Prio'][p]||0;
+      const cls=who==='goran'?'gc':'pc';
+      const d=document.createElement('div');
+      d.className='p-item';
+      d.innerHTML=`<span class="pl">${p}</span><div class="pdots">${[1,2,3,4,5].map(n=>`<div class="pdot ${n<=val?'on '+cls:''}" onclick="setPrio('${who}','${p}',${n})"></div>`).join('')}</div>`;
+      el.appendChild(d);
+    });
+  });
+}
+
+function setPrio(who,name,val){S[who+'Prio'][name]=val;renderPrios();schedSave();}
+
+// ── LOCATIONS ─────────────────────────────────────────────────
+function renderLocs() {
+  const tabs=document.getElementById('loc-tabs');
+  const cards=document.getElementById('loc-cards');
+  tabs.innerHTML='';cards.innerHTML='';
+  LOCATIONS.forEach(loc=>{
+    const btn=document.createElement('button');
+    btn.className='ltab'+(loc.id===S.activeLoc?' active':'');
+    btn.textContent=loc.name.split('—')[0].trim();
+    btn.onclick=()=>{S.activeLoc=loc.id;renderLocs();};
+    tabs.appendChild(btn);
+    const gr=S.goranRating[loc.id]||0;
+    const pr=S.partnerRating[loc.id]||0;
+    const c=document.createElement('div');
+    c.className='loc-card'+(loc.id===S.activeLoc?' active':'');
+    c.innerHTML=`<h3>${loc.name}</h3><div class="loc-tagline">${loc.tagline}</div>
+      <div class="pc-grid">
+        <div class="pc-group pros"><h4>Plusevi</h4><ul>${loc.pros.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+        <div class="pc-group cons"><h4>Minusi</h4><ul>${loc.cons.map(c=>`<li>${c}</li>`).join('')}</ul></div>
+      </div>
+      <div class="rating-block"><h4>Moja ocena (1–5)</h4>
+        <div class="rrow"><span class="rn">Goran</span><div class="stars">${[1,2,3,4,5].map(n=>`<div class="star ${n<=gr?'on gs':''}" onclick="setRating('goran','${loc.id}',${n})">●</div>`).join('')}</div></div>
+        <div class="rrow"><span class="rn">Supruga</span><div class="stars">${[1,2,3,4,5].map(n=>`<div class="star ${n<=pr?'on ps':''}" onclick="setRating('partner','${loc.id}',${n})">●</div>`).join('')}</div></div>
+      </div>`;
+    cards.appendChild(c);
+  });
+}
+
+function setRating(who,locId,val){S[who+'Rating'][locId]=val;renderLocs();schedSave();}
+
+// ── DEALBREAKERS ──────────────────────────────────────────────
+function renderDB() {
+  ['goran','partner'].forEach(who=>{
+    const el=document.getElementById(who+'-db');
+    el.innerHTML='';
+    DEALBREAKERS.forEach(db=>{
+      const d=document.createElement('div');
+      d.className='db-item';
+      d.innerHTML=`<input type="checkbox" ${S[who+'DB'][db]?'checked':''} onchange="S['${who}DB']['${db}']=this.checked;schedSave()"><span>${db}</span>`;
+      el.appendChild(d);
+    });
+  });
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────
+function renderSummary() {
+  const scores=LOCATIONS.map(loc=>({
+    loc, g:S.goranRating[loc.id]||0, p:S.partnerRating[loc.id]||0,
+    avg:((S.goranRating[loc.id]||0)+(S.partnerRating[loc.id]||0))/2
+  })).sort((a,b)=>b.avg-a.avg);
+
+  document.getElementById('summary-rows').innerHTML=scores.map((s,i)=>`
+    <div class="srow">
+      <div class="sname">${s.loc.name.split('—')[0].trim()}</div>
+      <div class="sbars">
+        <div class="strack"><div class="sfill sg" style="width:${s.g*20}%"></div></div>
+        <div class="strack"><div class="sfill sp" style="width:${s.p*20}%"></div></div>
+        <div class="bar-labels"><span>G: ${s.g||'—'}</span><span>S: ${s.p||'—'}</span></div>
+      </div>
+      <div class="savg">${s.avg>0?s.avg.toFixed(1):'—'}</div>
+      ${i===0&&s.avg>0?'<span class="stag">Top</span>':''}
+    </div>`).join('');
+
+  const tensions=[];
+  LOCATIONS.forEach(loc=>{
+    const g=S.goranRating[loc.id]||0, p=S.partnerRating[loc.id]||0, diff=Math.abs(g-p);
+    if(g>0&&p>0&&diff>=2) tensions.push({name:loc.name.split('—')[0].trim(),diff,g,p,cls:diff>=3?'high':'med'});
+  });
+  PRIORITIES.forEach(pr=>{
+    const g=S.goranPrio[pr]||0, p=S.partnerPrio[pr]||0, diff=Math.abs(g-p);
+    if(g>0&&p>0&&diff>=2) tensions.push({name:`Prioritet: ${pr}`,diff,g,p,cls:diff>=3?'high':'med'});
+  });
+  document.getElementById('tensions').innerHTML=tensions.length
+    ?tensions.map(t=>`<div class="tension-item"><div class="tension-dot ${t.cls}"></div><span>${t.name}</span><span style="margin-left:auto;color:var(--muted);font-size:12px">G:${t.g} S:${t.p}</span></div>`).join('')
+    :`<div class="tension-item"><div class="tension-dot low"></div><span>Nema većih razlika — ili još niste ocenili 😊</span></div>`;
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────
+function renderAll() {
+  renderPhases();
+  renderPrios();
+  renderLocs();
+  renderDB();
+  renderSummary();
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
