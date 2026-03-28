@@ -551,7 +551,7 @@ header p {
   </div>
   <textarea class="notes-area" id="notes" placeholder="Beleške posle razgovora — šta je ostalo otvoreno, šta ste zaključili..." oninput="schedSave()"></textarea>
   <br>
-  <button class="upd-btn" onclick="renderSummary()">↻ Osveži</button>
+  <button class="upd-btn" onclick="loadData()">↻ Osveži</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -596,19 +596,43 @@ async function loadData() {
 async function saveData() {
   setSyncStatus('saving', 'Čuvam...');
   try {
+    // PREVENT DATA LOSS: Učitaj najnovije podatke iz baze pre čuvanja
+    const { data: latestDB } = await SB.from('framework_data').select('data').eq('id','shared').single();
+    const latest = latestDB?.data || {};
+
+    // Ako korisnik označi ko popunjava, čuvamo njegove lokalne izmene, 
+    // a od drugera povlačimo poslednje stanje iz baze (sprečavamo overwriting)
     const payload = {
-      goranPrio: S.goranPrio,
-      partnerPrio: S.partnerPrio,
-      goranRating: S.goranRating,
-      partnerRating: S.partnerRating,
-      goranDB: S.goranDB,
-      partnerDB: S.partnerDB,
+      goranPrio: currentWho === 'partner' ? (latest.goranPrio || S.goranPrio) : S.goranPrio,
+      partnerPrio: currentWho === 'goran' ? (latest.partnerPrio || S.partnerPrio) : S.partnerPrio,
+      goranRating: currentWho === 'partner' ? (latest.goranRating || S.goranRating) : S.goranRating,
+      partnerRating: currentWho === 'goran' ? (latest.partnerRating || S.partnerRating) : S.partnerRating,
+      goranDB: currentWho === 'partner' ? (latest.goranDB || S.goranDB) : S.goranDB,
+      partnerDB: currentWho === 'goran' ? (latest.partnerDB || S.partnerDB) : S.partnerDB,
       notes: document.getElementById('notes').value
     };
+
     const { error } = await SB.from('framework_data')
       .upsert({ id: 'shared', data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if (error) throw error;
+    
+    // Osveži lokalno stanje partnerovim podacima da izbegneš out-of-sync
+    if (currentWho === 'goran') {
+       S.partnerPrio = payload.partnerPrio;
+       S.partnerRating = payload.partnerRating;
+       S.partnerDB = payload.partnerDB;
+    } else if (currentWho === 'partner') {
+       S.goranPrio = payload.goranPrio;
+       S.goranRating = payload.goranRating;
+       S.goranDB = payload.goranDB;
+    }
+
     setSyncStatus('saved', 'Sačuvano ✓');
+    
+    // Renderujemo promene sem ukoliko kucamo u textArea da ne prekidamo fokus
+    if (document.activeElement.id !== 'notes') {
+        renderAll();
+    }
   } catch(e) {
     setSyncStatus('error', 'Greška pri čuvanju');
     console.error(e);
