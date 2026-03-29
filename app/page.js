@@ -3,7 +3,6 @@
 import { useReducer, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
-import WhoBar from '@/components/WhoBar';
 import NavTabs from '@/components/NavTabs';
 import PhasesPanel from '@/components/PhasesPanel';
 import PrioritiesPanel from '@/components/PrioritiesPanel';
@@ -166,10 +165,6 @@ export default function Home() {
   return (
     <>
       <Header />
-      <WhoBar
-        who={state.who}
-        onSetWho={who => dispatch({ type: 'SET_WHO', who })}
-      />
       <NavTabs
         activePanel={state.activePanel}
         onSwitch={id => dispatch({ type: 'SET_PANEL', id })}
