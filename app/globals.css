@@ -137,6 +137,9 @@ header p {
 }
 
 .who-bar span { font-size: 12px; color: var(--muted); }
+.who-bar.unset { border-color: var(--gold); background: rgba(158,122,58,0.06); }
+.who-bar .who-label { flex-shrink: 0; }
+.who-bar .who-hint { margin-left: auto; font-size: 11px; font-style: italic; text-align: right; }
 
 .who-btn {
   padding: 6px 18px;
@@ -469,13 +472,169 @@ header p {
 .sync-bar.loading .sdot { background: var(--p); animation: blink 1s infinite; }
 @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
 
+/* ── ZAKLJUČANE KOLONE / POMOĆNI TEKST ── */
+.phelp {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 18px;
+  max-width: 640px;
+}
+
+.col-tag {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-weight: 500;
+}
+.col-tag.lock { background: transparent; letter-spacing: 0; padding: 2px 4px; }
+
+.locked { opacity: 0.62; }
+.locked .pdot, .locked .star { cursor: not-allowed; }
+.locked .db-item input { cursor: not-allowed; }
+
+.p-total {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.p-total strong { color: var(--text); font-weight: 600; }
+
+.empty-note {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+/* ── DISKVALIFIKACIJA ── */
+.ltab.dq { text-decoration: line-through; opacity: 0.65; }
+.ltab .dq-mark { color: #c97070; margin-left: 6px; text-decoration: none; display: inline-block; }
+
+.dq-banner {
+  background: rgba(201,112,112,0.09);
+  border: 1px solid rgba(201,112,112,0.4);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.dq-banner strong { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #a85252; display: block; margin-bottom: 8px; }
+.dq-banner ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.dq-banner li { font-size: 13px; display: flex; gap: 8px; }
+.dq-banner li::before { content: '✗'; color: #c97070; flex-shrink: 0; }
+.dq-banner em { color: var(--muted); font-size: 12px; font-style: normal; }
+
+.open-banner {
+  background: rgba(158,122,58,0.08);
+  border: 1px solid rgba(158,122,58,0.35);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── FIT EDITOR ── */
+.fit-block { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 24px; }
+.fit-block h4 { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.pdot.on.fitc { background: var(--gold); border-color: var(--gold); }
+
+.rrow .rcalc { font-size: 11px; color: var(--muted); margin-left: auto; }
+.rrow .rcalc strong { color: var(--gold); font-weight: 600; }
+
+/* ── MATRICA USLOVA ── */
+.dbm-wrap { overflow-x: auto; margin-bottom: 24px; }
+.dbm { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.dbm th, .dbm td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: center; }
+.dbm thead th { font-size: 11px; font-weight: 500; color: var(--muted); background: var(--surface2); white-space: nowrap; }
+.dbm tr:last-child td { border-bottom: none; }
+.dbm .dbm-head { text-align: left; font-size: 12px; min-width: 190px; }
+.dbm .dbm-who { display: block; font-size: 10px; color: var(--muted); }
+
+.dbm-cell {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.12s;
+}
+.dbm-cell.yes { background: rgba(58,125,87,0.12); border-color: var(--green); color: var(--green); }
+.dbm-cell.no { background: rgba(201,112,112,0.14); border-color: #c97070; color: #a85252; }
+.dbm-cell.unknown { background: var(--surface2); color: var(--muted); }
+
+.dbm-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 11px; color: var(--muted); }
+.dbm-legend b.yes { color: var(--green); }
+.dbm-legend b.no { color: #c97070; }
+.dbm-legend b.unknown { color: var(--muted); }
+.dbm-legend .dbm-hint { margin-left: auto; font-style: italic; }
+
+/* ── SUMMARY: REDOVI SA DVA SKORA ── */
+.lrow { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.lrow:last-of-type { border-bottom: none; }
+.lrow.dq { opacity: 0.55; }
+
+.lrow-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.lrow-head .sname { font-size: 13px; font-weight: 500; }
+.lrow-head .savg { margin-left: auto; }
+
+.stag.dqtag { background: #c97070; }
+.stag.gaptag { background: transparent; border: 1px solid var(--gold); color: var(--gold); font-weight: 500; }
+
+.lrow-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.bargroup { display: flex; flex-direction: column; gap: 5px; }
+.bglabel { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.sfill.calc { opacity: 0.55; }
+
+.lrow-dq { margin-top: 10px; font-size: 11px; color: #a85252; }
+
+/* ── DRIVERS ── */
+.drv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.drv-col h4 { font-size: 12px; font-weight: 500; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.drv-col h4::before { content: ''; width: 9px; height: 9px; border-radius: 50%; display: block; }
+.drv-col.gc h4::before { background: var(--g); }
+.drv-col.pc h4::before { background: var(--p); }
+.drv-item { font-size: 12px; padding: 4px 0; line-height: 1.5; }
+.drv-item.plus { color: var(--green); }
+.drv-item.minus { color: #c97070; }
+.drv-item.muted { color: var(--muted); font-style: italic; }
+
+/* ── INSIGHT ── */
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.insight-card h4 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.insight-card p { font-size: 13px; line-height: 1.65; }
+
+.tension-vals { margin-left: auto; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
 /* ── RESPONSIVE ── */
 @media(max-width:580px){
   .phases-row { grid-template-columns: repeat(3, 1fr); }
-  .priorities-grid, .pc-grid, .db-grid { grid-template-columns: 1fr; }
+  .priorities-grid, .pc-grid, .db-grid, .lrow-bars, .drv-grid { grid-template-columns: 1fr; }
   header { flex-direction: column; gap: 12px; }
   header p { text-align: left; max-width: 100%; }
   .legend { justify-content: flex-start; }
   .main-nav { overflow-x: auto; }
   .nav-btn { min-width: 70px; }
+  .who-bar { flex-wrap: wrap; }
+  .who-bar .who-hint { margin-left: 0; width: 100%; text-align: left; }
+  .rrow .rcalc { width: 100%; margin-left: 0; }
 }
