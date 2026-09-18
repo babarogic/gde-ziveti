@@ -14,8 +14,8 @@ export default function DealbreakersPanel({
   const required = DEALBREAKERS.filter(item => goranDB[item] || partnerDB[item]);
 
   return (
-    <div className={`panel${isActive ? ' active' : ''}`}>
-      <div className="slabel">Apsolutni uslovi — bez ovoga ne može</div>
+    <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="dealbreakers-title">
+      <h2 className="slabel" id="dealbreakers-title">Obavezni uslovi — bez ovoga ne može</h2>
       <p className="phelp">
         Uslov koji bar jedno od vas čekira postaje obavezan. Lokacija koja ga
         ne ispunjava se diskvalifikuje — bez obzira na ocene.
@@ -47,7 +47,7 @@ export default function DealbreakersPanel({
         })}
       </div>
 
-      <div className="slabel">Da li lokacija ispunjava uslov?</div>
+      <h2 className="slabel">Da li lokacija ispunjava uslov?</h2>
       {required.length === 0 ? (
         <div className="empty-note">
           Čim čekirate neki uslov gore, ovde se pojavljuje tabela za proveru po lokacijama.
@@ -77,8 +77,10 @@ export default function DealbreakersPanel({
                     return (
                       <td key={loc.id}>
                         <button
+                          type="button"
                           className={`dbm-cell ${st}`}
                           title={TITLE[st]}
+                          aria-label={`${loc.name}: ${item} — ${TITLE[st]}`}
                           onClick={() => onSetDBStatus(loc.id, item, CYCLE[st])}
                         >
                           {MARK[st]}
@@ -98,6 +100,6 @@ export default function DealbreakersPanel({
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -10,8 +10,8 @@ export default function PrioritiesPanel({ who, goranPrio, partnerPrio, onSetPrio
   };
 
   return (
-    <div className={`panel${isActive ? ' active' : ''}`}>
-      <div className="slabel">Ocenite šta vam je važno — 1 do 5 tačkica, odvojeno</div>
+    <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="priorities-title">
+      <h2 className="slabel" id="priorities-title">Ocenite šta vam je važno — od 1 do 5, odvojeno</h2>
       <p className="phelp">
         Ove ocene su težine u računici. Ako svemu daš 5, ništa nije prioritet —
         pokušaj da razlikuješ „važno” od „lepo bi bilo”.
@@ -35,11 +35,15 @@ export default function PrioritiesPanel({ who, goranPrio, partnerPrio, onSetPrio
                     <span className="pl">{p}</span>
                     <div className="pdots">
                       {[1, 2, 3, 4, 5].map(n => (
-                        <div
+                        <button
+                          type="button"
                           key={n}
                           className={`pdot${n <= val ? ` on ${cls}c` : ''}`}
                           onClick={mine ? () => onSetPrio(w, p, n === val ? 0 : n) : undefined}
-                          title={mine ? 'Klikni ponovo da poništiš' : `Ovo popunjava ${label}`}
+                          aria-label={`${p}: ${n} od 5${n === val ? ', izabrano' : ''}`}
+                          aria-pressed={n === val}
+                          disabled={!mine}
+                          title={mine ? 'Izaberite ponovo da poništite' : `Ovo popunjava ${label}`}
                         />
                       ))}
                     </div>
@@ -53,6 +57,6 @@ export default function PrioritiesPanel({ who, goranPrio, partnerPrio, onSetPrio
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

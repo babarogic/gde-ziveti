@@ -5,7 +5,7 @@ export default function Header() {
     <header>
       <h1>Gde ćemo <em>živeti?</em></h1>
       <div>
-        <p>Framework za usklađivanje — prioriteti, faze života, lokacije.</p>
+        <p>Alat za usklađivanje — prioriteti, faze života i lokacije.</p>
         <div className="legend">
           <span className="lg">Goran</span>
           <span className="lp">Supruga</span>

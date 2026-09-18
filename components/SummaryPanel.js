@@ -2,20 +2,23 @@
 
 import { LOCATIONS, PRIORITIES } from '@/lib/data';
 import { rankLocations, drivers, researchList } from '@/lib/scoring';
+import { coupleProgress } from '@/lib/progress';
 
 const shortName = name => name.split('—')[0].trim();
 
 export default function SummaryPanel({
   goranRating, partnerRating, goranPrio, partnerPrio,
   goranDB, partnerDB, fit, dbStatus,
-  notes, onNotesChange, onRefresh, isActive,
+  notes, onNotesChange, onRefresh, activePhase, isActive,
+  researchPlan, onResearchChange, decisionPlan, onDecisionPlanChange,
 }) {
   const ranked = rankLocations({
-    goranPrio, partnerPrio, goranRating, partnerRating, goranDB, partnerDB, fit, dbStatus,
+    goranPrio, partnerPrio, goranRating, partnerRating, goranDB, partnerDB, fit, dbStatus, activePhase,
   });
+  const progress = coupleProgress({ goranPrio, partnerPrio, goranRating, partnerRating });
 
   const alive = ranked.filter(r => !r.disqualified);
-  const winner = alive.find(r => r.calcAvg > 0);
+  const winner = progress.ready ? alive.find(r => r.calcAvg > 0) : null;
   const winnerDrivers = winner
     ? {
         g: drivers(goranPrio, fit, winner.loc.id),
@@ -50,22 +53,32 @@ export default function SummaryPanel({
   const research = researchList(goranDB, partnerDB, dbStatus);
 
   return (
-    <div className={`panel${isActive ? ' active' : ''}`}>
-      <div className="slabel">Ukupni pregled</div>
+    <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="summary-title">
+      <h2 className="slabel" id="summary-title">Ukupni pregled</h2>
+
+      {!progress.ready && (
+        <div className="readiness-banner" role="status">
+          <strong>Rezultat je još privremen</strong>
+          <span>
+            Goran {progress.goran.percent}% · Supruga {progress.partner.percent}%.
+            Konačni redosled se prikazuje kada oboje završite prioritete i ocenite lokacije.
+          </span>
+        </div>
+      )}
 
       <div className="summary-card">
         <h3>Poređenje lokacija</h3>
         <p className="phelp">
           <b>Osećaj</b> je vaša ocena iz stomaka. <b>Matrica</b> je izračunato iz
           vaših prioriteta i toga koliko ih mesto ispunjava. Kad se te dve razlikuju —
-          tu je razgovor.
+          tu je razgovor. Izabrana faza života čini 20% ocene matrice.
         </p>
 
         {ranked.map((r, i) => (
           <div key={r.loc.id} className={`lrow${r.disqualified ? ' dq' : ''}`}>
             <div className="lrow-head">
               <span className="sname">{shortName(r.loc.name)}</span>
-              {i === 0 && !r.disqualified && r.calcAvg > 0 && <span className="stag">Vodi</span>}
+              {progress.ready && i === 0 && !r.disqualified && r.calcAvg > 0 && <span className="stag">Vodi</span>}
               {r.disqualified && <span className="stag dqtag">Pada na uslovima</span>}
               {!r.disqualified && Math.abs(r.gap) >= 0.8 && (
                 <span className="stag gaptag">
@@ -162,11 +175,40 @@ export default function SummaryPanel({
 
       <div className="tension-card">
         <h4>Treba proveriti ({research.length})</h4>
-        {research.length > 0 ? research.map((r, i) => (
-          <div key={i} className="tension-item">
-            <div className="tension-dot med" />
-            <span><b>{shortName(r.loc.name)}</b> — {r.item}</span>
-            <span className="tension-vals">{r.wanted}</span>
+        {research.length > 0 ? research.map(r => (
+          <div key={`${r.loc.id}-${r.item}`} className="research-task">
+            {(() => {
+              const key = `${r.loc.id}::${r.item}`;
+              const task = researchPlan?.[key] || {};
+              return (
+                <>
+                  <label className="research-check">
+                    <input
+                      type="checkbox"
+                      checked={!!task.done}
+                      onChange={event => onResearchChange(key, { done: event.target.checked })}
+                    />
+                    <span><b>{shortName(r.loc.name)}</b> — {r.item}</span>
+                  </label>
+                  <select
+                    value={task.owner || 'together'}
+                    onChange={event => onResearchChange(key, { owner: event.target.value })}
+                    aria-label={`Ko proverava: ${shortName(r.loc.name)}, ${r.item}`}
+                  >
+                    <option value="together">Zajedno</option>
+                    <option value="goran">Goran</option>
+                    <option value="partner">Supruga</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={task.source || ''}
+                    onChange={event => onResearchChange(key, { source: event.target.value })}
+                    aria-label={`Izvor ili zaključak: ${shortName(r.loc.name)}, ${r.item}`}
+                    placeholder="Izvor ili zaključak"
+                  />
+                </>
+              );
+            })()}
           </div>
         )) : (
           <div className="tension-item">
@@ -176,14 +218,41 @@ export default function SummaryPanel({
         )}
       </div>
 
-      <textarea
-        className="notes-area"
-        value={notes}
-        onChange={e => onNotesChange(e.target.value)}
-        placeholder="Beleške posle razgovora — šta je ostalo otvoreno, šta ste zaključili..."
-      />
-      <br />
-      <button className="upd-btn" onClick={onRefresh}>↻ Osveži</button>
-    </div>
+      <div className="notes-block">
+        <label htmlFor="conversation-notes">Beleške posle razgovora</label>
+        <p>Šta je ostalo otvoreno i šta ste zaključili?</p>
+        <textarea
+          id="conversation-notes"
+          className="notes-area"
+          value={notes}
+          onChange={e => onNotesChange(e.target.value)}
+          placeholder="Na primer: proveriti vreme putovanja u špicu..."
+        />
+      </div>
+
+      <section className="decision-card" aria-labelledby="decision-title">
+        <h3 id="decision-title">Sledeći korak</h3>
+        <div className="decision-fields">
+          <label>
+            <span>Šta radimo sledeće?</span>
+            <input
+              type="text"
+              value={decisionPlan?.nextStep || ''}
+              onChange={event => onDecisionPlanChange({ nextStep: event.target.value })}
+              placeholder="Na primer: poseta Kamenici u špicu"
+            />
+          </label>
+          <label>
+            <span>Datum odluke</span>
+            <input
+              type="date"
+              value={decisionPlan?.decisionDate || ''}
+              onChange={event => onDecisionPlanChange({ decisionDate: event.target.value })}
+            />
+          </label>
+        </div>
+      </section>
+      <button type="button" className="upd-btn" onClick={onRefresh}>Osveži podatke</button>
+    </section>
   );
 }

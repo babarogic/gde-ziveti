@@ -12,8 +12,8 @@ export default function LocationsPanel({
   const prios = { goran: goranPrio || {}, partner: partnerPrio || {} };
 
   return (
-    <div className={`panel${isActive ? ' active' : ''}`}>
-      <div className="slabel">Ocenite svaku lokaciju od 1 do 5</div>
+    <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="locations-title">
+      <h2 className="slabel" id="locations-title">Ocenite svaku lokaciju od 1 do 5</h2>
       <div className="loc-tabs">
         {LOCATIONS.map(loc => {
           const { disqualified } = dealbreakerCheck(loc.id, goranDB, partnerDB, dbStatus);
@@ -79,10 +79,13 @@ export default function LocationsPanel({
                     <span className="pl">{p}</span>
                     <div className="pdots">
                       {[1, 2, 3, 4, 5].map(n => (
-                        <div
+                        <button
+                          type="button"
                           key={n}
                           className={`pdot${n <= val ? ' on fitc' : ''}`}
                           onClick={() => onSetFit(p, loc.id, n)}
+                          aria-label={`${p}: lokacija ispunjava ${n} od 5`}
+                          aria-pressed={n === val}
                         />
                       ))}
                     </div>
@@ -102,13 +105,17 @@ export default function LocationsPanel({
                     <span className="rn">{label}{mine ? '' : ' 🔒'}</span>
                     <div className="stars">
                       {[1, 2, 3, 4, 5].map(n => (
-                        <div
+                        <button
+                          type="button"
                           key={n}
                           className={`star${n <= val ? ` on ${cls}s` : ''}`}
                           onClick={mine ? () => onSetRating(w, loc.id, n === val ? 0 : n) : undefined}
+                          aria-label={`${label}: ocena ${n} od 5${n === val ? ', izabrano' : ''}`}
+                          aria-pressed={n === val}
+                          disabled={!mine}
                         >
-                          ●
-                        </div>
+                          <span aria-hidden="true">●</span>
+                        </button>
                       ))}
                     </div>
                     <span className="rcalc">
@@ -121,6 +128,6 @@ export default function LocationsPanel({
           </div>
         );
       })}
-    </div>
+    </section>
   );
 }

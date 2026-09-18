@@ -6,20 +6,22 @@ export default function PhasesPanel({ activePhase, onSetPhase, isActive }) {
   const phase = PHASES.find(p => p.id === activePhase);
 
   return (
-    <div className={`panel${isActive ? ' active' : ''}`}>
-      <div className="slabel">Kliknite na fazu i vidite kako svaka lokacija stoji</div>
+    <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="phases-title">
+      <h2 className="slabel" id="phases-title">Izaberite fazu i pogledajte kako svaka lokacija stoji</h2>
       <div className="timeline-wrap">
         <div className="phases-row">
           {PHASES.map(ph => (
-            <div
+            <button
+              type="button"
               key={ph.id}
               className={`phase-btn${ph.id === activePhase ? ' active' : ''}`}
               onClick={() => onSetPhase(ph.id)}
+              aria-pressed={ph.id === activePhase}
             >
-              <span className="ph-icon">{ph.icon}</span>
+              <span className="ph-icon" aria-hidden="true">{ph.icon}</span>
               <span className="ph-title">{ph.title}</span>
               <span className="ph-years">{ph.years}</span>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -27,7 +29,7 @@ export default function PhasesPanel({ activePhase, onSetPhase, isActive }) {
           <div key={ph.id} className={`phase-detail${ph.id === activePhase ? ' active' : ''}`}>
             <h3>
               {ph.icon} {ph.title}{' '}
-              <small style={{ fontSize: '0.7em', color: 'var(--muted)', fontFamily: "'Outfit', sans-serif", fontWeight: 300 }}>
+              <small style={{ fontSize: '0.7em', color: 'var(--muted)', fontFamily: "'Outfit', sans-serif", fontWeight: 400 }}>
                 {ph.years}
               </small>
             </h3>
@@ -45,6 +47,6 @@ export default function PhasesPanel({ activePhase, onSetPhase, isActive }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

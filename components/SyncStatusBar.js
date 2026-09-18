@@ -14,8 +14,12 @@ export default function SyncStatusBar({ status, message }) {
   if (status === 'idle') return null;
 
   return (
-    <div className={`sync-bar ${status}`}>
-      <div className="sdot" />
+    <div
+      className={`sync-bar ${status}`}
+      role={status === 'error' ? 'alert' : 'status'}
+      aria-live={status === 'error' ? 'assertive' : 'polite'}
+    >
+      <div className="sdot" aria-hidden="true" />
       <span>{msg}</span>
     </div>
   );

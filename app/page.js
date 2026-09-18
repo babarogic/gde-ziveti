@@ -11,6 +11,9 @@ import LocationsPanel from '@/components/LocationsPanel';
 import DealbreakersPanel from '@/components/DealbreakersPanel';
 import SummaryPanel from '@/components/SummaryPanel';
 import SyncStatusBar from '@/components/SyncStatusBar';
+import ProgressStatus from '@/components/ProgressStatus';
+import WorkspaceBar from '@/components/WorkspaceBar';
+import { dataSource, resolveWorkspace, PRIVATE_WORKSPACES_ENABLED } from '@/lib/workspace';
 
 const WHO_KEY = 'gz-who';
 
@@ -20,7 +23,7 @@ const PERSISTED = [
   'goranPrio', 'partnerPrio',
   'goranRating', 'partnerRating',
   'goranDB', 'partnerDB',
-  'fit', 'dbStatus', 'notes',
+  'fit', 'dbStatus', 'notes', 'activePhase', 'researchPlan', 'decisionPlan',
 ];
 
 const initialState = {
@@ -33,12 +36,15 @@ const initialState = {
   fit: {},
   dbStatus: {},
   notes: '',
+  researchPlan: {},
+  decisionPlan: { nextStep: '', decisionDate: '' },
   activePhase: 'now',
   activeLoc: 'grad',
   activePanel: 'phases',
   who: null,
   syncStatus: 'loading',
   syncMessage: '',
+  workspace: null,
 };
 
 function reducer(state, action) {
@@ -78,8 +84,20 @@ function reducer(state, action) {
       return { ...state, who: action.who };
     case 'SET_NOTES':
       return { ...state, notes: action.notes };
+    case 'SET_RESEARCH_TASK':
+      return {
+        ...state,
+        researchPlan: {
+          ...state.researchPlan,
+          [action.key]: { ...state.researchPlan[action.key], ...action.patch },
+        },
+      };
+    case 'SET_DECISION_PLAN':
+      return { ...state, decisionPlan: { ...state.decisionPlan, ...action.patch } };
     case 'SET_SYNC':
       return { ...state, syncStatus: action.status, syncMessage: action.message || '' };
+    case 'SET_WORKSPACE':
+      return { ...state, workspace: action.workspace };
     case 'LOAD_DATA':
       return { ...state, ...action.data, syncStatus: 'saved', syncMessage: 'Učitano ✓' };
     default:
@@ -92,15 +110,20 @@ export default function Home() {
   const saveTimerRef = useRef(null);
   const stateRef = useRef(state);
   const dirtyRef = useRef(new Set());
-  stateRef.current = state;
 
-  const loadData = useCallback(async () => {
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const loadData = useCallback(async (workspaceId = stateRef.current.workspace?.id) => {
+    if (!workspaceId) return;
     dispatch({ type: 'SET_SYNC', status: 'loading', message: 'Učitavam...' });
     try {
+      const source = dataSource(workspaceId);
       const { data, error } = await supabase
-        .from('framework_data')
+        .from(source.table)
         .select('data')
-        .eq('id', 'shared')
+        .eq(source.key, source.id)
         .maybeSingle();
       if (error) throw error;
 
@@ -126,10 +149,11 @@ export default function Home() {
     dispatch({ type: 'SET_SYNC', status: 'saving', message: 'Čuvam...' });
     const s = stateRef.current;
     try {
+      const source = dataSource(s.workspace?.id);
       const { data: latestRow, error: readErr } = await supabase
-        .from('framework_data')
+        .from(source.table)
         .select('data')
-        .eq('id', 'shared')
+        .eq(source.key, source.id)
         .maybeSingle();
       if (readErr) throw readErr;
 
@@ -137,9 +161,14 @@ export default function Home() {
       const payload = { ...(latestRow?.data || {}) };
       for (const k of keys) payload[k] = s[k];
 
+      const row = {
+        [source.key]: source.id,
+        data: payload,
+        updated_at: new Date().toISOString(),
+      };
       const { error } = await supabase
-        .from('framework_data')
-        .upsert({ id: 'shared', data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        .from(source.table)
+        .upsert(row, { onConflict: source.key });
       if (error) throw error;
 
       dispatch({ type: 'SET_SYNC', status: 'saved', message: 'Sačuvano ✓' });
@@ -160,27 +189,42 @@ export default function Home() {
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(WHO_KEY) : null;
     if (stored === 'goran' || stored === 'partner') dispatch({ type: 'SET_WHO', who: stored });
-    loadData();
+    resolveWorkspace()
+      .then(workspace => {
+        dispatch({ type: 'SET_WORKSPACE', workspace });
+        return loadData(workspace.id);
+      })
+      .catch(error => {
+        dispatch({ type: 'SET_SYNC', status: 'error', message: 'Privatni prostor nije dostupan' });
+        console.error(error);
+      });
     return () => clearTimeout(saveTimerRef.current);
   }, [loadData]);
 
   // Tuđe izmene stižu uživo — bez ovoga jedno ne vidi šta drugo radi.
   useEffect(() => {
+    if (!state.workspace?.id) return undefined;
+    const source = dataSource(state.workspace.id);
     const channel = supabase
-      .channel('framework_data-shared')
+      .channel(`couple-data-${source.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'framework_data', filter: 'id=eq.shared' },
-        () => loadData()
+        { event: '*', schema: 'public', table: source.table, filter: `${source.key}=eq.${source.id}` },
+        () => loadData(state.workspace.id)
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadData]);
+  }, [loadData, state.workspace]);
 
   const handleSetWho = useCallback((who) => {
     dispatch({ type: 'SET_WHO', who });
     try { window.localStorage.setItem(WHO_KEY, who); } catch {}
   }, []);
+
+  const handleSetPhase = useCallback((id) => {
+    dispatch({ type: 'SET_PHASE', id });
+    schedSave('activePhase');
+  }, [schedSave]);
 
   const handleSetPrio = useCallback((who, name, val) => {
     dispatch({ type: 'SET_PRIO', who, name, val });
@@ -212,10 +256,37 @@ export default function Home() {
     schedSave('notes');
   }, [schedSave]);
 
+  const handleResearchChange = useCallback((key, patch) => {
+    dispatch({ type: 'SET_RESEARCH_TASK', key, patch });
+    schedSave('researchPlan');
+  }, [schedSave]);
+
+  const handleDecisionPlanChange = useCallback((patch) => {
+    dispatch({ type: 'SET_DECISION_PLAN', patch });
+    schedSave('decisionPlan');
+  }, [schedSave]);
+
+  if (PRIVATE_WORKSPACES_ENABLED && !state.workspace) {
+    return (
+      <>
+        <Header />
+        <div className="workspace-loading" role="status">Pripremam privatni prostor za vas…</div>
+        <SyncStatusBar status={state.syncStatus} message={state.syncMessage} />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
+      <WorkspaceBar workspace={state.workspace} />
       <WhoBar who={state.who} onSetWho={handleSetWho} />
+      <ProgressStatus
+        goranPrio={state.goranPrio}
+        partnerPrio={state.partnerPrio}
+        goranRating={state.goranRating}
+        partnerRating={state.partnerRating}
+      />
       <NavTabs
         activePanel={state.activePanel}
         onSwitch={id => dispatch({ type: 'SET_PANEL', id })}
@@ -223,7 +294,7 @@ export default function Home() {
       <PhasesPanel
         isActive={state.activePanel === 'phases'}
         activePhase={state.activePhase}
-        onSetPhase={id => dispatch({ type: 'SET_PHASE', id })}
+        onSetPhase={handleSetPhase}
       />
       <PrioritiesPanel
         isActive={state.activePanel === 'priorities'}
@@ -269,7 +340,12 @@ export default function Home() {
         dbStatus={state.dbStatus}
         notes={state.notes}
         onNotesChange={handleNotesChange}
+        researchPlan={state.researchPlan}
+        onResearchChange={handleResearchChange}
+        decisionPlan={state.decisionPlan}
+        onDecisionPlanChange={handleDecisionPlanChange}
         onRefresh={loadData}
+        activePhase={state.activePhase}
       />
       <SyncStatusBar status={state.syncStatus} message={state.syncMessage} />
     </>
