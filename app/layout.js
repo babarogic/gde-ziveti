@@ -2,13 +2,13 @@ import './globals.css';
 import { Agentation } from 'agentation';
 
 export const metadata = {
-  title: 'Gde živeti — naš framework',
-  description: 'Alat za usklađivanje — prioriteti, faze života i lokacije.',
+  title: 'Gde ćemo živeti?',
+  description: 'Zajednički alat za poređenje mesta, razgovor i sledeći korak.',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="sr">
+    <html lang="sr-Latn">
       <body>
         <main id="main-content">{children}</main>
         {process.env.NODE_ENV === 'development' && <Agentation />}

@@ -1,27 +1,36 @@
 'use client';
 
 const TABS = [
-  { id: 'phases',      num: '01', label: 'Faze života' },
-  { id: 'priorities',  num: '02', label: 'Prioriteti' },
-  { id: 'locations',   num: '03', label: 'Lokacije' },
-  { id: 'dealbreakers',num: '04', label: 'Obavezni uslovi' },
-  { id: 'summary',     num: '05', label: 'Rezultati' },
+  { id: 'plan',       label: 'Naš plan' },
+  { id: 'priorities', label: 'Šta mi je važno' },
+  { id: 'locations',  label: 'Mesta' },
+  { id: 'compare',    label: 'Poređenje' },
+  { id: 'decision',   label: 'Dogovor' },
 ];
 
 export default function NavTabs({ activePanel, onSwitch }) {
+  const activeIndex = TABS.findIndex(tab => tab.id === activePanel);
   return (
-    <nav className="main-nav">
-      {TABS.map(tab => (
+    <nav className="journey-nav" aria-label="Koraci odluke">
+      <div className="journey-current">
+        <span>Korak {activeIndex + 1} od {TABS.length}</span>
+        <strong>{TABS[activeIndex]?.label}</strong>
+      </div>
+      <ol>
+      {TABS.map((tab, index) => (
+        <li key={tab.id}>
         <button
-          key={tab.id}
-          className={`nav-btn${activePanel === tab.id ? ' active' : ''}`}
+          type="button"
+          className={`nav-btn${activePanel === tab.id ? ' active' : ''}${index < activeIndex ? ' visited' : ''}`}
           onClick={() => onSwitch(tab.id)}
           aria-current={activePanel === tab.id ? 'step' : undefined}
         >
-          <span className="num">{tab.num}</span>
-          {tab.label}
+          <span className="num">{String(index + 1).padStart(2, '0')}</span>
+          <span>{tab.label}</span>
         </button>
+        </li>
       ))}
+      </ol>
     </nav>
   );
 }

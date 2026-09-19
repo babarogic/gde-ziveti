@@ -1,15 +1,15 @@
 'use client';
 
-export default function Header() {
+export default function Header({ personName, onChangePerson }) {
   return (
-    <header>
-      <h1>Gde ćemo <em>živeti?</em></h1>
-      <div>
-        <p>Alat za usklađivanje — prioriteti, faze života i lokacije.</p>
-        <div className="legend">
-          <span className="lg">Goran</span>
-          <span className="lp">Supruga</span>
-        </div>
+    <header className="app-header">
+      <a className="brand" href="#main-content" aria-label="Gde ćemo živeti — početak">
+        <span className="brand-mark" aria-hidden="true">⌂</span>
+        <span>Gde ćemo <em>živeti?</em></span>
+      </a>
+      <div className="person-menu">
+        <span>Popunjavaš kao <strong>{personName}</strong></span>
+        <button type="button" onClick={onChangePerson}>Promeni</button>
       </div>
     </header>
   );

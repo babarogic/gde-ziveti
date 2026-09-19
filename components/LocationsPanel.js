@@ -1,133 +1,92 @@
 'use client';
 
-import { LOCATIONS, PRIORITIES, PEOPLE } from '@/lib/data';
+import { LOCATIONS, PRIORITIES } from '@/lib/data';
 import { fitFor, weightedScore, dealbreakerCheck } from '@/lib/scoring';
 
 export default function LocationsPanel({
-  who, activeLoc, goranRating, partnerRating, goranPrio, partnerPrio,
-  goranDB, partnerDB, fit, dbStatus,
-  onSetLoc, onSetRating, onSetFit, isActive,
+  who, personName, activeLoc, goranRating, partnerRating, goranPrio, partnerPrio,
+  goranDB, partnerDB, fit, dbStatus, onSetLoc, onSetRating, onSetFit, isActive,
 }) {
-  const ratings = { goran: goranRating, partner: partnerRating };
-  const prios = { goran: goranPrio || {}, partner: partnerPrio || {} };
+  const ratings = who === 'goran' ? goranRating : partnerRating;
+  const priorities = who === 'goran' ? goranPrio : partnerPrio;
+  const ratedCount = LOCATIONS.filter(loc => (ratings[loc.id] || 0) > 0).length;
+  const loc = LOCATIONS.find(item => item.id === activeLoc) || LOCATIONS[0];
+  const currentIndex = LOCATIONS.findIndex(item => item.id === loc.id);
+  const value = ratings[loc.id] || 0;
+  const calc = weightedScore(priorities, fit, loc.id);
+  const { failed, open, disqualified } = dealbreakerCheck(loc.id, goranDB, partnerDB, dbStatus);
+
+  function move(offset) {
+    const next = LOCATIONS[(currentIndex + offset + LOCATIONS.length) % LOCATIONS.length];
+    onSetLoc(next.id);
+  }
 
   return (
     <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="locations-title">
-      <h2 className="slabel" id="locations-title">Ocenite svaku lokaciju od 1 do 5</h2>
-      <div className="loc-tabs">
-        {LOCATIONS.map(loc => {
-          const { disqualified } = dealbreakerCheck(loc.id, goranDB, partnerDB, dbStatus);
-          return (
-            <button
-              key={loc.id}
-              className={`ltab${loc.id === activeLoc ? ' active' : ''}${disqualified ? ' dq' : ''}`}
-              onClick={() => onSetLoc(loc.id)}
-            >
-              {loc.name.split('—')[0].trim()}
-              {disqualified && <span className="dq-mark">✗</span>}
-            </button>
-          );
-        })}
+      <div className="step-heading split-heading">
+        <div>
+          <span className="eyebrow">Brza lična reakcija</span>
+          <h1 id="locations-title">{personName}, kako ti deluju ova mesta?</h1>
+          <p>Oceni osećaj. Detaljnu računicu možeš pogledati, ali ne moraš da je menjaš.</p>
+        </div>
+        <div className="location-progress"><strong>{ratedCount}</strong> / {LOCATIONS.length}<span>ocenjeno</span></div>
       </div>
 
-      {LOCATIONS.map(loc => {
-        const { failed, open, disqualified } = dealbreakerCheck(loc.id, goranDB, partnerDB, dbStatus);
+      <div className="loc-tabs" aria-label="Izaberi mesto">
+        {LOCATIONS.map(item => (
+          <button type="button" key={item.id}
+            className={`ltab${item.id === loc.id ? ' active' : ''}${ratings[item.id] ? ' done' : ''}`}
+            onClick={() => onSetLoc(item.id)}>
+            <span>{item.name.split('—')[0].trim()}</span>
+            {ratings[item.id] ? <b aria-label="ocenjeno">✓</b> : null}
+          </button>
+        ))}
+      </div>
 
-        return (
-          <div key={loc.id} className={`loc-card${loc.id === activeLoc ? ' active' : ''}`}>
-            <h3>{loc.name}</h3>
-            <div className="loc-tagline">{loc.tagline}</div>
+      <article className="location-focus">
+        <div className="location-title">
+          <span>{String(currentIndex + 1).padStart(2, '0')}</span>
+          <div><h2>{loc.name}</h2><p>{loc.tagline}</p></div>
+        </div>
 
-            {disqualified && (
-              <div className="dq-banner">
-                <strong>Pada na uslovima</strong>
-                <ul>
-                  {failed.map(f => (
-                    <li key={f.item}>{f.item} <em>({f.wanted})</em></li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {!disqualified && open.length > 0 && (
-              <div className="open-banner">
-                Nepoznato ({open.length}): {open.map(o => o.item).join(' · ')}
-              </div>
-            )}
+        {disqualified && <div className="dq-banner"><strong>Ne ispunjava obavezan uslov</strong><span>{failed.map(item => item.item).join(' · ')}</span></div>}
+        {!disqualified && open.length > 0 && <div className="open-banner">Treba proveriti: {open.map(item => item.item).join(' · ')}</div>}
 
-            <div className="pc-grid">
-              <div className="pc-group pros">
-                <h4>Plusevi</h4>
-                <ul>{loc.pros.map((p, i) => <li key={i}>{p}</li>)}</ul>
-              </div>
-              <div className="pc-group cons">
-                <h4>Minusi</h4>
-                <ul>{loc.cons.map((c, i) => <li key={i}>{c}</li>)}</ul>
-              </div>
-            </div>
-
-            <div className="fit-block">
-              <h4>Koliko ovo mesto daje ono što nam je važno</h4>
-              <p className="phelp">
-                Ovo nije „koliko mi je važno” nego „koliko ovo mesto to ispunjava”.
-                Zajedničko je za oboje i množi se sa vašim prioritetima. Polazne
-                vrednosti su procene — ispravite ih kad saznate tačno.
-              </p>
-              {PRIORITIES.map(p => {
-                const val = fitFor(fit, loc.id, p);
-                return (
-                  <div key={p} className="p-item">
-                    <span className="pl">{p}</span>
-                    <div className="pdots">
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <button
-                          type="button"
-                          key={n}
-                          className={`pdot${n <= val ? ' on fitc' : ''}`}
-                          onClick={() => onSetFit(p, loc.id, n)}
-                          aria-label={`${p}: lokacija ispunjava ${n} od 5`}
-                          aria-pressed={n === val}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="rating-block">
-              <h4>Moja ocena — iz stomaka (1–5)</h4>
-              {PEOPLE.map(({ who: w, label, cls }) => {
-                const val = ratings[w][loc.id] || 0;
-                const calc = weightedScore(prios[w], fit, loc.id);
-                const mine = who === w;
-                return (
-                  <div key={w} className={`rrow${mine ? '' : ' locked'}`}>
-                    <span className="rn">{label}{mine ? '' : ' 🔒'}</span>
-                    <div className="stars">
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <button
-                          type="button"
-                          key={n}
-                          className={`star${n <= val ? ` on ${cls}s` : ''}`}
-                          onClick={mine ? () => onSetRating(w, loc.id, n === val ? 0 : n) : undefined}
-                          aria-label={`${label}: ocena ${n} od 5${n === val ? ', izabrano' : ''}`}
-                          aria-pressed={n === val}
-                          disabled={!mine}
-                        >
-                          <span aria-hidden="true">●</span>
-                        </button>
-                      ))}
-                    </div>
-                    <span className="rcalc">
-                      matrica: <strong>{calc ? calc.toFixed(1) : '—'}</strong>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="gut-rating">
+          <div><span className="eyebrow">Tvoj osećaj</span><h3>Da li možeš da zamisliš život ovde?</h3></div>
+          <div className="rating-scale" role="group" aria-label={`Ocena za ${loc.name}`}>
+            {[1, 2, 3, 4, 5].map(number => (
+              <button type="button" key={number} className={number === value ? 'active' : ''}
+                onClick={() => onSetRating(who, loc.id, number === value ? 0 : number)}
+                aria-pressed={number === value} aria-label={`${number} od 5`}>
+                <b>{number}</b><span>{number === 1 ? 'Ne' : number === 3 ? 'Možda' : number === 5 ? 'Da' : ''}</span>
+              </button>
+            ))}
           </div>
-        );
-      })}
+        </div>
+
+        <div className="pc-grid">
+          <div className="pc-group pros"><h3>Šta ide u prilog</h3><ul>{loc.pros.map(item => <li key={item}>{item}</li>)}</ul></div>
+          <div className="pc-group cons"><h3>Šta traži kompromis</h3><ul>{loc.cons.map(item => <li key={item}>{item}</li>)}</ul></div>
+        </div>
+
+        <details className="advanced-fit">
+          <summary><span>Kako je izračunata ocena</span><b>{calc ? calc.toFixed(1) : '—'} / 5</b></summary>
+          <p>Ovo su zajedničke polazne procene. Menjajte ih tek kada proverite činjenice.</p>
+          {PRIORITIES.map(item => {
+            const fitValue = fitFor(fit, loc.id, item);
+            return <div className="fit-row" key={item}><span>{item}</span><div>{[1,2,3,4,5].map(number => <button type="button" key={number}
+              className={number <= fitValue ? 'on' : ''} onClick={() => onSetFit(item, loc.id, number)}
+              aria-label={`${item}: ${number} od 5`} aria-pressed={number === fitValue} />)}</div></div>;
+          })}
+        </details>
+
+        <div className="location-pager">
+          <button type="button" onClick={() => move(-1)}>← Prethodno</button>
+          <span>{currentIndex + 1} / {LOCATIONS.length}</span>
+          <button type="button" onClick={() => move(1)}>Sledeće →</button>
+        </div>
+      </article>
     </section>
   );
 }

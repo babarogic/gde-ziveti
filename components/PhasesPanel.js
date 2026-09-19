@@ -1,13 +1,17 @@
 'use client';
 
-import { PHASES, LOCATIONS } from '@/lib/data';
+import { PHASES } from '@/lib/data';
 
 export default function PhasesPanel({ activePhase, onSetPhase, isActive }) {
   const phase = PHASES.find(p => p.id === activePhase);
 
   return (
     <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="phases-title">
-      <h2 className="slabel" id="phases-title">Izaberite fazu i pogledajte kako svaka lokacija stoji</h2>
+      <div className="step-heading">
+        <span className="eyebrow">Prvo, zajednički pravac</span>
+        <h1 id="phases-title">Za koji period birate dom?</h1>
+        <p>Izaberi period koji vam je sada najvažniji. Možete ga promeniti u bilo kom trenutku.</p>
+      </div>
       <div className="timeline-wrap">
         <div className="phases-row">
           {PHASES.map(ph => (
@@ -25,27 +29,14 @@ export default function PhasesPanel({ activePhase, onSetPhase, isActive }) {
           ))}
         </div>
 
-        {PHASES.map(ph => (
-          <div key={ph.id} className={`phase-detail${ph.id === activePhase ? ' active' : ''}`}>
-            <h3>
-              {ph.icon} {ph.title}{' '}
-              <small style={{ fontSize: '0.7em', color: 'var(--muted)', fontFamily: "'Outfit', sans-serif", fontWeight: 400 }}>
-                {ph.years}
-              </small>
-            </h3>
-            <p className="ph-desc">{ph.desc}</p>
-            <div className="phase-grid">
-              {LOCATIONS.map(loc => (
-                <div key={loc.id} className="phase-loc-card">
-                  <h4>{loc.name.split('—')[0].trim()}</h4>
-                  {ph.locs[loc.id].map(([cls, txt], i) => (
-                    <div key={i} className={`phase-item ${cls}`}>{txt}</div>
-                  ))}
-                </div>
-              ))}
-            </div>
+        <div className="phase-summary" aria-live="polite">
+          <span className="phase-summary-icon" aria-hidden="true">{phase.icon}</span>
+          <div>
+            <span>Planiramo za period</span>
+            <h2>{phase.title} · {phase.years}</h2>
+            <p>{phase.desc}</p>
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );

@@ -1,61 +1,63 @@
 'use client';
 
-import { PRIORITIES, PEOPLE } from '@/lib/data';
+import { PRIORITIES, DEALBREAKERS } from '@/lib/data';
 
-export default function PrioritiesPanel({ who, goranPrio, partnerPrio, onSetPrio, isActive }) {
-  const prios = { goran: goranPrio, partner: partnerPrio };
-  const totals = {
-    goran: PRIORITIES.reduce((sum, p) => sum + (goranPrio[p] || 0), 0),
-    partner: PRIORITIES.reduce((sum, p) => sum + (partnerPrio[p] || 0), 0),
-  };
+export default function PrioritiesPanel({
+  who, personName, goranPrio, partnerPrio, goranDB, partnerDB,
+  onSetPrio, onSetDB, isActive,
+}) {
+  const prio = who === 'goran' ? goranPrio : partnerPrio;
+  const dealbreakers = who === 'goran' ? goranDB : partnerDB;
+  const selectedCount = PRIORITIES.filter(item => (prio[item] || 0) > 0).length;
+  const requiredCount = DEALBREAKERS.filter(item => dealbreakers[item]).length;
+  const atLimit = selectedCount >= 5;
+  const dbAtLimit = requiredCount >= 3;
 
   return (
     <section className={`panel${isActive ? ' active' : ''}`} aria-labelledby="priorities-title">
-      <h2 className="slabel" id="priorities-title">Ocenite šta vam je važno — od 1 do 5, odvojeno</h2>
-      <p className="phelp">
-        Ove ocene su težine u računici. Ako svemu daš 5, ništa nije prioritet —
-        pokušaj da razlikuješ „važno” od „lepo bi bilo”.
-      </p>
-      <div className="priorities-grid">
-        {PEOPLE.map(({ who: w, label, cls }) => {
-          const prio = prios[w];
-          const mine = who === w;
+      <div className="step-heading">
+        <span className="eyebrow">Samo tvoji odgovori</span>
+        <h1 id="priorities-title">{personName}, šta ti je najvažnije?</h1>
+        <p>Izaberi do pet stvari. Označi šta je važno, a šta je presudno.</p>
+      </div>
+      <div className="selection-counter"><strong>{selectedCount}</strong> / 5 izabrano</div>
+      <div className="priority-list">
+        {PRIORITIES.map(item => {
+          const value = prio[item] || 0;
+          const isSelected = value > 0;
           return (
-            <div key={w} className={`p-col ${cls}c${mine ? '' : ' locked'}`}>
-              <h3>
-                {label}
-                {mine
-                  ? <span className="col-tag">ti</span>
-                  : <span className="col-tag lock">🔒</span>}
-              </h3>
-              {PRIORITIES.map(p => {
-                const val = prio[p] || 0;
-                return (
-                  <div key={p} className="p-item">
-                    <span className="pl">{p}</span>
-                    <div className="pdots">
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <button
-                          type="button"
-                          key={n}
-                          className={`pdot${n <= val ? ` on ${cls}c` : ''}`}
-                          onClick={mine ? () => onSetPrio(w, p, n === val ? 0 : n) : undefined}
-                          aria-label={`${p}: ${n} od 5${n === val ? ', izabrano' : ''}`}
-                          aria-pressed={n === val}
-                          disabled={!mine}
-                          title={mine ? 'Izaberite ponovo da poništite' : `Ovo popunjava ${label}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="p-total">
-                Ukupno poena: <strong>{totals[w]}</strong> / {PRIORITIES.length * 5}
+            <div key={item} className={`priority-item${isSelected ? ' selected' : ''}`}>
+              <span>{item}</span>
+              <div className="choice-pills">
+                <button type="button" className={value > 0 && value < 4 ? 'active' : ''}
+                  onClick={() => onSetPrio(who, item, value > 0 && value < 4 ? 0 : 3)}
+                  disabled={!isSelected && atLimit}>Važno</button>
+                <button type="button" className={value >= 4 ? 'active strong' : ''}
+                  onClick={() => onSetPrio(who, item, value >= 4 ? 0 : 5)}
+                  disabled={!isSelected && atLimit}>Presudno</button>
               </div>
             </div>
           );
         })}
+      </div>
+
+      <div className="must-have-section">
+        <div className="section-intro">
+          <span className="eyebrow">Opcionalno</span>
+          <h2>Bez čega ne možeš?</h2>
+          <p>Izaberi najviše tri uslova koji zaista mogu da isključe neko mesto.</p>
+        </div>
+        <div className="must-have-grid">
+          {DEALBREAKERS.map(item => (
+            <label key={item} className={dealbreakers[item] ? 'checked' : ''}>
+              <input type="checkbox" checked={!!dealbreakers[item]}
+                disabled={!dealbreakers[item] && dbAtLimit}
+                onChange={event => onSetDB(who, item, event.target.checked)} />
+              <span>{item}</span>
+            </label>
+          ))}
+        </div>
+        <div className="selection-foot">{requiredCount} / 3 obavezna uslova</div>
       </div>
     </section>
   );

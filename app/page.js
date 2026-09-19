@@ -4,14 +4,13 @@ import { useReducer, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/Header';
 import NavTabs from '@/components/NavTabs';
-import WhoBar from '@/components/WhoBar';
 import PhasesPanel from '@/components/PhasesPanel';
 import PrioritiesPanel from '@/components/PrioritiesPanel';
 import LocationsPanel from '@/components/LocationsPanel';
-import DealbreakersPanel from '@/components/DealbreakersPanel';
 import SummaryPanel from '@/components/SummaryPanel';
+import DecisionPanel from '@/components/DecisionPanel';
+import WelcomeScreen from '@/components/WelcomeScreen';
 import SyncStatusBar from '@/components/SyncStatusBar';
-import ProgressStatus from '@/components/ProgressStatus';
 import WorkspaceBar from '@/components/WorkspaceBar';
 import { dataSource, resolveWorkspace, PRIVATE_WORKSPACES_ENABLED } from '@/lib/workspace';
 
@@ -23,7 +22,7 @@ const PERSISTED = [
   'goranPrio', 'partnerPrio',
   'goranRating', 'partnerRating',
   'goranDB', 'partnerDB',
-  'fit', 'dbStatus', 'notes', 'activePhase', 'researchPlan', 'decisionPlan',
+  'fit', 'dbStatus', 'notes', 'activePhase', 'researchPlan', 'decisionPlan', 'peopleNames',
 ];
 
 const initialState = {
@@ -38,9 +37,10 @@ const initialState = {
   notes: '',
   researchPlan: {},
   decisionPlan: { nextStep: '', decisionDate: '' },
+  peopleNames: { goran: 'Goran', partner: '' },
   activePhase: 'now',
   activeLoc: 'grad',
-  activePanel: 'phases',
+  activePanel: 'plan',
   who: null,
   syncStatus: 'loading',
   syncMessage: '',
@@ -82,6 +82,8 @@ function reducer(state, action) {
       return { ...state, activePanel: action.id };
     case 'SET_WHO':
       return { ...state, who: action.who };
+    case 'SET_PERSON_NAME':
+      return { ...state, peopleNames: { ...state.peopleNames, [action.who]: action.name } };
     case 'SET_NOTES':
       return { ...state, notes: action.notes };
     case 'SET_RESEARCH_TASK':
@@ -221,6 +223,16 @@ export default function Home() {
     try { window.localStorage.setItem(WHO_KEY, who); } catch {}
   }, []);
 
+  const handleClearWho = useCallback(() => {
+    dispatch({ type: 'SET_WHO', who: null });
+    try { window.localStorage.removeItem(WHO_KEY); } catch {}
+  }, []);
+
+  const handleSetPersonName = useCallback((who, name) => {
+    dispatch({ type: 'SET_PERSON_NAME', who, name });
+    schedSave('peopleNames');
+  }, [schedSave]);
+
   const handleSetPhase = useCallback((id) => {
     dispatch({ type: 'SET_PHASE', id });
     schedSave('activePhase');
@@ -276,36 +288,57 @@ export default function Home() {
     );
   }
 
+  if (!state.who) {
+    return (
+      <>
+        <WorkspaceBar workspace={state.workspace} />
+        <WelcomeScreen
+          partnerName={state.peopleNames.partner}
+          onChoose={handleSetWho}
+          onSavePartnerName={name => handleSetPersonName('partner', name)}
+        />
+        <SyncStatusBar status={state.syncStatus} message={state.syncMessage} />
+      </>
+    );
+  }
+
+  const steps = ['plan', 'priorities', 'locations', 'compare', 'decision'];
+  const activeStep = steps.indexOf(state.activePanel);
+  const switchPanel = id => {
+    dispatch({ type: 'SET_PANEL', id });
+    window.requestAnimationFrame(() => document.getElementById('journey-content')?.scrollIntoView());
+  };
+  const personName = state.peopleNames[state.who] || (state.who === 'goran' ? 'Goran' : 'Druga osoba');
+
   return (
-    <>
-      <Header />
+    <div className="app-shell">
+      <Header personName={personName} onChangePerson={handleClearWho} />
       <WorkspaceBar workspace={state.workspace} />
-      <WhoBar who={state.who} onSetWho={handleSetWho} />
-      <ProgressStatus
-        goranPrio={state.goranPrio}
-        partnerPrio={state.partnerPrio}
-        goranRating={state.goranRating}
-        partnerRating={state.partnerRating}
-      />
       <NavTabs
         activePanel={state.activePanel}
-        onSwitch={id => dispatch({ type: 'SET_PANEL', id })}
+        onSwitch={switchPanel}
       />
+      <div id="journey-content" className="journey-content">
       <PhasesPanel
-        isActive={state.activePanel === 'phases'}
+        isActive={state.activePanel === 'plan'}
         activePhase={state.activePhase}
         onSetPhase={handleSetPhase}
       />
       <PrioritiesPanel
         isActive={state.activePanel === 'priorities'}
         who={state.who}
+        personName={personName}
         goranPrio={state.goranPrio}
         partnerPrio={state.partnerPrio}
+        goranDB={state.goranDB}
+        partnerDB={state.partnerDB}
         onSetPrio={handleSetPrio}
+        onSetDB={handleSetDB}
       />
       <LocationsPanel
         isActive={state.activePanel === 'locations'}
         who={state.who}
+        personName={personName}
         activeLoc={state.activeLoc}
         goranRating={state.goranRating}
         partnerRating={state.partnerRating}
@@ -319,17 +352,8 @@ export default function Home() {
         onSetRating={handleSetRating}
         onSetFit={handleSetFit}
       />
-      <DealbreakersPanel
-        isActive={state.activePanel === 'dealbreakers'}
-        who={state.who}
-        goranDB={state.goranDB}
-        partnerDB={state.partnerDB}
-        dbStatus={state.dbStatus}
-        onSetDB={handleSetDB}
-        onSetDBStatus={handleSetDBStatus}
-      />
       <SummaryPanel
-        isActive={state.activePanel === 'summary'}
+        isActive={state.activePanel === 'compare'}
         goranRating={state.goranRating}
         partnerRating={state.partnerRating}
         goranPrio={state.goranPrio}
@@ -338,16 +362,32 @@ export default function Home() {
         partnerDB={state.partnerDB}
         fit={state.fit}
         dbStatus={state.dbStatus}
-        notes={state.notes}
-        onNotesChange={handleNotesChange}
+        activePhase={state.activePhase}
+        peopleNames={state.peopleNames}
+      />
+      <DecisionPanel
+        isActive={state.activePanel === 'decision'}
+        peopleNames={state.peopleNames}
+        goranDB={state.goranDB}
+        partnerDB={state.partnerDB}
+        dbStatus={state.dbStatus}
+        onSetDBStatus={handleSetDBStatus}
         researchPlan={state.researchPlan}
         onResearchChange={handleResearchChange}
+        notes={state.notes}
+        onNotesChange={handleNotesChange}
         decisionPlan={state.decisionPlan}
         onDecisionPlanChange={handleDecisionPlanChange}
-        onRefresh={loadData}
-        activePhase={state.activePhase}
       />
+      <div className="journey-actions">
+        <button type="button" className="secondary" onClick={() => switchPanel(steps[activeStep - 1])} disabled={activeStep === 0}>← Nazad</button>
+        <span>{activeStep + 1} / {steps.length}</span>
+        {activeStep < steps.length - 1
+          ? <button type="button" className="primary" onClick={() => switchPanel(steps[activeStep + 1])}>Nastavi →</button>
+          : <button type="button" className="primary" onClick={() => switchPanel('compare')}>Pogledaj rezultat</button>}
+      </div>
+      </div>
       <SyncStatusBar status={state.syncStatus} message={state.syncMessage} />
-    </>
+    </div>
   );
 }
